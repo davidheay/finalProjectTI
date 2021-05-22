@@ -35,7 +35,7 @@ jobs:
       - run:
           name: "copy app"
           command: |
-            scp -oStrictHostKeyChecking=no ./demo.war ubuntu@${ipServer1}:~/apache-tomcat-9.0.46/webapps/demo.war
+            scp -o StrictHostKeyChecking=no ./demo.war ubuntu@${ipServer1}:~/apache-tomcat-9.0.46/webapps/demo.war
       - run:
           name: "run app"
           command: |
