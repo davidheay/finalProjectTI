@@ -15,6 +15,6 @@ public class IndexController {
 
     @GetMapping
     public String index() {
-        return jdbcTemplate.queryForObject("select id from imgs", String.class);
+        return jdbcTemplate.queryForObject("select id from imgs", String.class) + "hola";
     }
 }
