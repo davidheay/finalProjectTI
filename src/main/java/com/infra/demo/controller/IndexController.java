@@ -13,7 +13,7 @@ public class IndexController {
     @GetMapping("")
     @ResponseBody
     public String index() {
-        return "hola";
+        return "prueba 1";
     }
     
 }
