@@ -1,9 +1,13 @@
 version: 2.1
 
-jobs:
-  build-and-test:  
+executors:
+  my-executor:
     docker:
       - image: cimg/openjdk:11.0
+
+jobs:
+  build-and-test-dev:
+    executor: my-executor
     steps:
       - checkout
       - run:
@@ -12,43 +16,43 @@ jobs:
       - run:
           name: Test
           command: mvn test
-      - run:
-          name: "see items"
-          command: |
-            cd ..
-            cd .ssh
-            ls -all
+      - persist_to_workspace:
+          root: /home/circleci/project/target
+          paths:
+            - demo.war
+  deploy-app-dev:
+    executor: my-executor
+    steps:
+      - attach_workspace:
+          at: .
       - add_ssh_keys:
           fingerprints:
             - "91:d8:12:a6:9c:c5:11:d2:9d:42:15:9e:d0:e0:87:b5"
       - run:
           name: "stop last app"
           command: |
-            ssh -o StrictHostKeyChecking=no ubuntu@3.15.185.131 "sudo pkill -f 'java -jar'"
+            ssh -o StrictHostKeyChecking=no ubuntu@${ipServer1} "./apache-tomcat-9.0.46/bin/shutdown.sh"
       - run:
           name: "copy app"
           command: |
-            scp -oStrictHostKeyChecking=no ./target/demo-0.0.1-SNAPSHOT.jar ubuntu@3.15.185.131:~
+            scp -oStrictHostKeyChecking=no ./demo.war ubuntu@${ipServer1}:~/apache-tomcat-9.0.46/webapps/demo.war
       - run:
           name: "run app"
           command: |
-            ssh -o StrictHostKeyChecking=no ubuntu@3.15.185.131 "java -jar ./demo-0.0.1-SNAPSHOT.jar & echo 1"
-  # copy-file:  
-  #   docker:
-  #     - image: cimg/base:2021.04 
-  #   steps:
-  #     - checkout
-      
-      
+            ssh -o StrictHostKeyChecking=no ubuntu@${ipServer1} "./apache-tomcat-9.0.46/bin/startup.sh"
 
 workflows:
-  sample: 
+  dev:
     jobs:
-      - build-and-test
-      # - copy-file:
-      #     requires:
-      #       - build-and-test
-      #     filters:
-      #       branches:
-      #         only: dev
-      
+      - build-and-test-dev:
+          filters:
+            branches:
+              only:
+                - dev
+      - hold-dev:
+          type: approval
+          requires:
+            - build-and-test-dev
+      - deploy-app-dev:
+          requires:
+            - hold-dev
