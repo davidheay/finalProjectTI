@@ -22,13 +22,17 @@ jobs:
           fingerprints:
             - "91:d8:12:a6:9c:c5:11:d2:9d:42:15:9e:d0:e0:87:b5"
       - run:
+          name: "stop last app"
+          command: |
+            ssh -o StrictHostKeyChecking=no ubuntu@3.15.185.131 "sudo pkill -f 'java -jar'"
+      - run:
           name: "copy app"
           command: |
             scp -oStrictHostKeyChecking=no ./target/demo-0.0.1-SNAPSHOT.jar ubuntu@3.15.185.131:~
       - run:
           name: "run app"
           command: |
-            ssh -o StrictHostKeyChecking=no ubuntu@3.15.185.131 "java -jar ./demo-0.0.1-SNAPSHOT.jar"
+            ssh -o StrictHostKeyChecking=no ubuntu@3.15.185.131 "java -jar ./demo-0.0.1-SNAPSHOT.jar & echo 1"
   # copy-file:  
   #   docker:
   #     - image: cimg/base:2021.04 
