@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Index</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+            integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+        <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css"
+            integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p"
+            crossorigin="anonymous" />
+        <style>
+            #loading {
+                background: url('loader.gif') no-repeat center center;
+                position: absolute;
+                background-color: #414141cf;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 100%;
+                z-index: 9999999;
+            }
+        </style>
+
+    </head>
+
+    <body>
+        <div id="loading" style="display: none;"></div>
+        <div class="container mt-5">
+            <div class="row justify-content-center">
+                <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
+                    <div class="carousel-inner">
+                        <div class="carousel-item" th:each="img: ${imgs}" th:data-id="${img.id}">
+                            <img th:src="${img.base64}" style="height: 80vh;" class="d-block" alt="...">
+                        </div>
+                    </div>
+                    <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="sr-only">Previous</span>
+                    </a>
+                    <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="sr-only">Next</span>
+                    </a>
+                </div>
+
+            </div>
+            <div class="row mt-4">
+                <div class="col-6">
+                    <button type="button" class="btn btn-success btn-block" data-toggle="modal" data-target="#modelId">
+                        <i class="fa fa-plus"></i>
+                        Add photo
+                    </button>
+                </div>
+                <div class="col-6">
+                    <button type="button" id="delete" class="btn btn-danger btn-block">
+                        <i class="fa fa-eraser"></i>
+                        Delete photo
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="modelId" tabindex="-1" role="dialog" aria-labelledby="modelTitleId"
+            aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add photo</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="">Photo:</label>
+                            <input type="file" class="form-control" id="file" accept="image/*">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">
+                            <i class="fa fa-times"></i>
+                            Close
+                        </button>
+                        <button type="button" class="btn btn-success" id="add">
+                            <i class="fa fa-check"></i>
+                            Add
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src=" https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#loading').hide();
+            $('.carousel .carousel-item:first-of-type').addClass("active")
+            $('.carousel').carousel({
+                interval: 550 * 10
+            });
+            $("#add").click(() => {
+                const file = document.querySelector('#file').files[0]
+                if (file) {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => {
+                        console.log(reader.result);
+                        gifLoad();
+                        fetch('insert', {
+                            body: reader.result,
+                            method: "POST",
+                            headers: {
+                                [$('meta[name="_csrf_header"]').attr('content')]: $('meta[name="_csrf"]').attr('content'),
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Content-type': 'text/plain'
+                            }
+                        }).then(res => {
+                            if (res.status !== 200) throw new Error(res.status)
+                            return res.json()
+                        }).then(result => {
+                            if (result) {
+                                $("#modelId").modal('hide');
+                                Swal.fire("Success", "new photo", 'success').then(() => {
+                                    location.reload();
+                                })
+                            } else {
+                                Swal.fire("Error", "error saving photo", 'error')
+
+                            }
+                        }).catch(e => {
+                            if (e.message == '401') {
+                                Swal.fire("Error", "error saving photo", 'error')
+                            } else {
+                                console.error(e);
+                                Swal.fire("Error", "error saving photo", 'error')
+                            }
+                        }).finally(removeGifLoad);
+                    };
+                    reader.onerror = error => {
+                        Swal.fire("Error", "please check photo", "error");
+                    };
+                } else {
+                    Swal.fire("Error", "please select a photo", "warning");
+                }
+            });
+            $("#delete").click(() => {
+                const id = $(".carousel-item.active").data().id;
+                const img = $(".carousel-item.active img").attr("src");
+                Swal.fire({
+                    title: 'Do you want to delete the photo?',
+                    imageUrl: img,
+                    imageHeight: 200,
+                    imageAlt: 'A tall image',
+                    showDenyButton: true,
+                    confirmButtonText: `Yes`,
+                    denyButtonText: `No`,
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        gifLoad();
+                        fetch('delete/' + id, {
+                            headers: {
+                                [$('meta[name="_csrf_header"]').attr('content')]: $('meta[name="_csrf"]').attr('content'),
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Content-type': 'application/json'
+                            }
+                        }).then(res => {
+                            if (res.status !== 200) throw new Error(res.status)
+                            return res.json()
+                        }).then(result => {
+                            if (result) {
+                                $("#modelId").modal('hide');
+                                Swal.fire("Success", "photo deleted", 'success').then(() => {
+                                    location.reload();
+                                })
+                            } else {
+                                Swal.fire("Error", "error deleting photo", 'error')
+
+                            }
+                        }).catch(e => {
+                            if (e.message == '401') {
+                                Swal.fire("Error", "error deleting photo", 'error')
+                            } else {
+                                console.error(e);
+                                Swal.fire("Error", "error deleting photo", 'error')
+                            }
+                        }).finally(removeGifLoad);
+                    }
+                })
+            })
+        });
+        const gifLoad = () => {
+            $('#loading').show();
+        }
+        const removeGifLoad = () => {
+            $('#loading').hide();
+        }
+    </script>
+
+</html>
