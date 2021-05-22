@@ -16,7 +16,6 @@
 .mtj.tmp/
 
 # Package Files #
-*.jar
 *.war
 *.nar
 *.ear
@@ -32,6 +31,15 @@ hs_err_pid*
 target/
 
 ### Maven ###
+.classpath
+.factorypath
+.mvn/
+.project
+.settings/
+.vscode/
+HELP.md
+mvnw
+mvnw.cmd
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
