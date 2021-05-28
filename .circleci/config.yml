@@ -20,26 +20,46 @@ jobs:
           root: /home/circleci/project/target
           paths:
             - demo.war
-  deploy-app-dev:
+  deploy-app-dev1:
     executor: my-executor
     steps:
       - attach_workspace:
           at: .
       - add_ssh_keys:
           fingerprints:
-            - "91:d8:12:a6:9c:c5:11:d2:9d:42:15:9e:d0:e0:87:b5"
+            - "af:7b:be:be:84:bd:37:6e:1d:17:00:63:c7:ae:49:b3"
       - run:
           name: "stop last app"
           command: |
-            ssh -o StrictHostKeyChecking=no ubuntu@${ipServer1} "./apache-tomcat-9.0.46/bin/shutdown.sh"
+            ssh -o StrictHostKeyChecking=no ubuntu@${ipServer2Dev} "./apache-tomcat-9.0.46/bin/shutdown.sh"
       - run:
           name: "copy app"
           command: |
-            scp -o StrictHostKeyChecking=no ./demo.war ubuntu@${ipServer1}:~/apache-tomcat-9.0.46/webapps/demo.war
+            scp -o StrictHostKeyChecking=no ./demo.war ubuntu@${ipServer2Dev}:~/apache-tomcat-9.0.46/webapps/demo.war
       - run:
           name: "run app"
           command: |
-            ssh -o StrictHostKeyChecking=no ubuntu@${ipServer1} "./apache-tomcat-9.0.46/bin/startup.sh"
+            ssh -o StrictHostKeyChecking=no ubuntu@${ipServer2Dev} "./apache-tomcat-9.0.46/bin/startup.sh"
+  deploy-app-dev2:
+    executor: my-executor
+    steps:
+      - attach_workspace:
+          at: .
+      - add_ssh_keys:
+          fingerprints:
+            - "af:7b:be:be:84:bd:37:6e:1d:17:00:63:c7:ae:49:b3"
+      - run:
+          name: "stop last app"
+          command: |
+            ssh -o StrictHostKeyChecking=no ubuntu@${ipServer1Dev} "./apache-tomcat-9.0.46/bin/shutdown.sh"
+      - run:
+          name: "copy app"
+          command: |
+            scp -o StrictHostKeyChecking=no ./demo.war ubuntu@${ipServer1Dev}:~/apache-tomcat-9.0.46/webapps/demo.war
+      - run:
+          name: "run app"
+          command: |
+            ssh -o StrictHostKeyChecking=no ubuntu@${ipServer1Dev} "./apache-tomcat-9.0.46/bin/startup.sh"
 
 workflows:
   dev:
@@ -53,6 +73,9 @@ workflows:
           type: approval
           requires:
             - build-and-test-dev
-      - deploy-app-dev:
+      - deploy-app-dev1:
+          requires:
+            - hold-dev
+      - deploy-app-dev2:
           requires:
             - hold-dev
