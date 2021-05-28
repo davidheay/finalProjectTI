@@ -60,6 +60,61 @@ jobs:
           name: "run app"
           command: |
             ssh -o StrictHostKeyChecking=no ubuntu@${ipServer1Dev} "./apache-tomcat-9.0.46/bin/startup.sh"
+  
+  build-and-test-prod:
+    executor: my-executor
+    steps:
+      - checkout
+      - run:
+          name: Build
+          command: mvn -B -DskipTests clean package
+      - run:
+          name: Test
+          command: mvn test
+      - persist_to_workspace:
+          root: /home/circleci/project/target
+          paths:
+            - demo.war
+  deploy-app-prod1:
+    executor: my-executor
+    steps:
+      - attach_workspace:
+          at: .
+      - add_ssh_keys:
+          fingerprints:
+            - "af:7b:be:be:84:bd:37:6e:1d:17:00:63:c7:ae:49:b3"
+      - run:
+          name: "stop last app"
+          command: |
+            ssh -o StrictHostKeyChecking=no ubuntu@${ipServer2Prod} "./apache-tomcat-9.0.46/bin/shutdown.sh"
+      - run:
+          name: "copy app"
+          command: |
+            scp -o StrictHostKeyChecking=no ./demo.war ubuntu@${ipServer2Prod}:~/apache-tomcat-9.0.46/webapps/demo.war
+      - run:
+          name: "run app"
+          command: |
+            ssh -o StrictHostKeyChecking=no ubuntu@${ipServer2Prod} "./apache-tomcat-9.0.46/bin/startup.sh"
+  deploy-app-prod2:
+    executor: my-executor
+    steps:
+      - attach_workspace:
+          at: .
+      - add_ssh_keys:
+          fingerprints:
+            - "af:7b:be:be:84:bd:37:6e:1d:17:00:63:c7:ae:49:b3"
+      - run:
+          name: "stop last app"
+          command: |
+            ssh -o StrictHostKeyChecking=no ubuntu@${ipServer1Prod} "./apache-tomcat-9.0.46/bin/shutdown.sh"
+      - run:
+          name: "copy app"
+          command: |
+            scp -o StrictHostKeyChecking=no ./demo.war ubuntu@${ipServer1Prod}:~/apache-tomcat-9.0.46/webapps/demo.war
+      - run:
+          name: "run app"
+          command: |
+            ssh -o StrictHostKeyChecking=no ubuntu@${ipServer1Prod} "./apache-tomcat-9.0.46/bin/startup.sh"
 
 workflows:
   dev:
@@ -79,3 +134,19 @@ workflows:
       - deploy-app-dev2:
           requires:
             - hold-dev
+      
+      - build-and-test-prod:
+          filters:
+            branches:
+              only:
+                - main
+      - hold-prod:
+          type: approval
+          requires:
+            - build-and-test-prod
+      - deploy-app-prod1:
+          requires:
+            - hold-prod
+      - deploy-app-prod2:
+          requires:
+            - hold-prod
