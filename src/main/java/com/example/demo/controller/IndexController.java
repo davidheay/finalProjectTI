@@ -25,7 +25,7 @@ public class IndexController {
         model.addAttribute("imgs", jdbcTemplate.query("select * from imgs;", (rs, i) -> {
             return new Imagen(rs.getInt("id"), rs.getString("img"));
         }));
-        return "index";
+        return "index"
     }
 
     @PostMapping("/insert")
