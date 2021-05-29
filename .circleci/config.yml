@@ -117,7 +117,7 @@ jobs:
             ssh -o StrictHostKeyChecking=no ubuntu@${ipServer1Prod} "./apache-tomcat-9.0.46/bin/startup.sh"
 
 workflows:
-  dev:
+  work:
     jobs:
       - build-and-test-dev:
           filters:
